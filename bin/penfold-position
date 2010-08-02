@@ -1,0 +1,154 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'yaml'
+
+LIB_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
+$LOAD_PATH << LIB_DIR
+
+require 'lib/penfold'
+
+class Parser
+  Options = Struct.new(
+    :portfolio, :all, :name, :exit_stock_price, :exit_option_price, :days, :commission
+  )
+
+  def self.parse(args)
+    options = Options.new
+    options.portfolio = "portfolio.yml"
+    options.days = 0
+
+    parser = OptionParser.new do |o|
+
+      o.banner = "Usage: penfold position [[-n NAME|-A] exit options]"
+
+      o.separator ""
+      o.separator "Position options:"
+
+      o.on("-n", "--name NAME", "Name of position in portfolio", /\w+/) do |name|
+        options.name = name
+      end
+
+      o.on("-A", "--all", "Use all positions in portfolio") do
+        options.all = true
+      end
+
+      o.separator ""
+      o.separator "Exit options:"
+
+      o.on("-s", "--exit-stock-price PRICE", "Stock price to exit at", Float) do |price|
+        options.exit_stock_price = price * 100
+      end
+
+      o.on("-o", "--exit-option-price PRICE", "Option price to exit at", Float) do |price|
+        options.exit_option_price = price * 100
+      end
+
+      o.on("-e", "--exit-days DAYS", "Exit in n DAYS (default 0)", Integer) do |days|
+        options.days = days
+      end
+
+      o.on("-E", "--expires", "Hold position until expiry") do
+        options.days = 999999
+      end
+
+      o.separator ""
+      o.separator "Common options:"
+
+      o.on("-c", "--commission=NAME", "Commission fees to apply", /\w+/) do |name|
+        options.commission = Commission.const_get(name.upcase)
+      end
+
+      o.on_tail("-h", "--help", "Show this message") do
+        puts o
+        exit
+      end
+      
+      o.on_tail("-v", "--verbose") do
+        $VERBOSE = true
+      end
+    end
+
+    parser.parse!(args)
+    options
+  end
+end
+
+options = Parser.parse(ARGV) rescue abort($!.message)
+
+portfolio = YAML.load(File.read(options.portfolio))
+
+positions = if options.all or options.name.nil?
+  portfolio
+else
+  [[options.name, YAML.load(File.read(options.portfolio))[options.name]]]
+end
+
+positions.each do |position_name, position|
+  position.commission = options.commission if options.commission
+
+  begin
+    exit_option_price = 
+      options.exit_option_price || Market.fetch(position.option.to_ticker_s).ask
+    exit_stock_price  = 
+      options.exit_stock_price  || Market.fetch(position.stock.symbol.upcase).bid
+  rescue => e
+    puts "Unable to fetch data for position #{position_name}, skipping"
+    next
+  end
+
+  closing_position = CoveredCallExit.new(
+    :opening_position => position,
+    :exit_date => Date.today + options.days,
+    :stock_price => exit_stock_price,
+    :option_price => exit_option_price
+  )
+
+  output = <<EOT
+Position: %s
+
+Entry: %s @ %s, %s @ %s
+
+    Stock Total %s  (inc %s comm)
+  -   Call Sale %s  (inc %s comm)
+  =  Net Outlay %s  (%s per share)
+
+ Downside Protection: %s
+
+Exit: %s @ %s, %s @ %s on %s
+
+  #{closing_position.explain.chomp}
+
+     Period Return: %s
+ Annualized Return: %s
+  Days in Position: %s
+
+EOT
+
+  puts output % [
+    (position_name + " ").ljust(70, "="),
+    position.option,
+    position.option.price.to_money_s,
+    position.stock.symbol,
+    position.stock.price.to_money_s,
+    position.stock_total.to_money_s.rjust(12),
+    position.commission.stock_entry.to_money_s,
+    position.call_sale.to_money_s.rjust(12),
+    position.commission.total_option_entry(position.num_shares).to_money_s,
+    position.net_outlay.to_money_s.rjust(12),
+    position.net_per_share.to_money_s,
+
+    position.downside_protection.to_percent_s,
+
+    closing_position.option,
+    closing_position.option.price.to_money_s,
+    closing_position.stock.symbol,
+    closing_position.stock.price.to_money_s,
+    closing_position.exit_date,
+
+    closing_position.period_return.to_percent_s,
+    closing_position.annualized_return.to_percent_s,
+    closing_position.days_in_position
+  ]
+
+end

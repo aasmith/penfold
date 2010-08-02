@@ -1,0 +1,14 @@
+#!/usr/bin/env ruby
+
+require 'abbrev'
+
+names = %w(position try show list add remove)
+
+name = names.abbrev[ARGV.first]
+
+if name
+  exec "#{__FILE__}-#{name}", *ARGV
+else
+  abort "Usage: penfold [#{names.join("|")}] [options]"
+end
+

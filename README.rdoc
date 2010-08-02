@@ -1,0 +1,167 @@
+= penfold
+
+ * http://github.com/aasmith/penfold
+
+== DESCRIPTION
+
+Penfold is an assistant for screening potentital and tracking current 
+covered call positions.
+
+== FEATURES
+
+* Reports on the current profitability of a current position.
+* Shows the potential profitability of hypothetical positions.
+
+== TODO
+
+ * Add portfolio read/write frontend.
+ * Allow penfold-try to use a default ITM strike price.
+ * Some arguments to penfold-try are incomplete.
+ * Make commission class more flexible.
+
+== USAGE
+
+  Usage: penfold [position|try|show|list|add|remove] [options]
+  
+=== Position 
+
+Reports on a current position.
+
+  Usage: penfold position [[-n NAME|-A] exit options]
+  
+  Position options:
+      -n, --name NAME                  Name of position in portfolio
+      -A, --all                        Use all positions in portfolio
+  
+  Exit options:
+      -s, --exit-stock-price PRICE     Stock price to exit at
+      -o, --exit-option-price PRICE    Option price to exit at
+      -e, --exit-days DAYS             Exit in n DAYS (default 0)
+      -E, --expires                    Hold position until expiry
+  
+  Common options:
+      -c, --commission=NAME            Commission fees to apply
+      -h, --help                       Show this message
+      -v, --verbose
+  
+=== Try
+
+Tries out a hypothetical position.
+
+  Usage: penfold try [[[ticker options] entry options] exit options]
+  
+  Ticker options:
+      -t, --ticker=SYMBOL              Stock ticker SYMBOL to try
+      -n, --num-shares=NUM             Number of shares in position
+      -d, --option-date=DATE           Expiry DATE of option contract
+      -x, --option-strike=PRICE        Option strike PRICE
+  
+  Entry options:
+      -s, --entry-stock-price=PRICE    Stock PRICE to enter at
+      -o, --entry-option-price=PRICE   Option PRICE to enter at
+  
+  Exit options:
+      -S, --exit-stock-price=PRICE     Stock PRICE to exit at
+      -O, --exit-option-price=PRICE    Option PRICE to exit at
+      -e, --exit-days=DAYS             Exit in n DAYS (default expiry)
+      -E, --expires                    Hold position until expiry
+  
+  Common options:
+      -c, --commission=NAME            Commission fees to apply
+      -L, --last                       Use last price instead of bid/ask for stock pricing
+      -h, --help                       Show this message
+      -v, --verbose
+  
+
+== EXAMPLES
+
+  # Commands for checking a current position
+  
+  # check the profit of a position, using current market pricing
+  # assuming an immediate exit
+  
+  penfold position --name=example
+  
+  # check the profit of a position, using a hypothetical exit price,
+  # assuming an exit 3 days from now
+  
+  penfold position 
+          --name=example
+          --exit-stock-price=4.56
+          --exit-option-price=0.52
+          --exit-days=3
+  
+  # check the profit of a position, using current market pricing
+  # assuming the expiry of the contract
+  
+  penfold position --name=example --expires
+  
+  
+  # Commands for checking a potentital position
+  
+  # check the profit of stock XYZ, with an August 2010 option with $4 strike,
+  # using current market pricing and assuming an expiry of the contract
+  
+  penfold try --stock=XYZ --num-shares=1000 --option-date=100821 --option-strike=4
+  
+  # check the profit of stock XYZ with an August 2010 option with $4 strike,
+  # using provided entry pricing and assuming an exit in 5 days with provided
+  # exit pricing
+  
+  penfold try 
+          --stock=XYZ --num-shares=1000 --option-date=100821 --option-strike=4
+          --stock-entry-price=4.25 --option-entry-price=0.35
+          --exit-days=5 --stock-exit-price=4.51 --option-exit-price=0.39
+  
+  
+  # Batch position checks
+  
+  # Show all positions assuming expiry with current market prices
+  penfold position --all --expires
+  
+  # Show all positions assuming immediate exit with current market prices
+  penfold position --all 
+  
+  
+  # Portfolio commands
+  
+  # List current portfolio positions
+  
+  penfold [show|list]
+  
+  penfold add example 
+              --stock=XYZ --num-shares=1000 --option-date=100821 --option-strike=4
+              --stock-entry-price=4.5 --option-entry-price=0.34
+  
+  penfold remove example
+  
+  penfold rename example new_example
+
+
+== REQUIREMENTS
+
+ * nokogiri, if fetching quotes
+
+== LICENSE
+
+Copyright (c) 2010 Andrew A. Smith
+
+Permission is hereby granted, free of charge, to any person obtaining
+a copy of this software and associated documentation files (the
+'Software'), to deal in the Software without restriction, including
+without limitation the rights to use, copy, modify, merge, publish,
+distribute, sublicense, and/or sell copies of the Software, and to
+permit persons to whom the Software is furnished to do so, subject to
+the following conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+

@@ -1,0 +1,16 @@
+--- 
+example: !ruby/object:CoveredCallPosition 
+  commission: !ruby/object:Commission 
+    option_assignment: 500
+    option_entry: 850
+    option_entry_per_contract: 15
+    stock_entry: 295
+  num_shares: 500
+  option: !ruby/object:Call 
+    expires: 2010-08-24
+    price: 600
+    stock: !ruby/object:Stock 
+      price: 5000
+      symbol: XYZ
+    strike: 5000
+

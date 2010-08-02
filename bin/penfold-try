@@ -1,0 +1,184 @@
+#!/usr/bin/env ruby
+
+require 'optparse'
+require 'yaml'
+
+LIB_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
+$LOAD_PATH << LIB_DIR
+
+require 'lib/penfold'
+
+class Parser
+  Options = Struct.new(
+    :symbol, :num_shares, :option_date, :option_strike,
+    :entry_stock_price, :entry_option_price, 
+    :exit_stock_price, :exit_option_price, :days,
+    :commission, :last
+  )
+
+  def self.parse(args)
+    options = Options.new
+    options.days = 999999
+    options.commission = Commission::FREE
+
+    parser = OptionParser.new do |o|
+      o.banner = "Usage: penfold try [[[ticker options] entry options] exit options]"
+
+      o.separator ""
+      o.separator "Ticker options:"
+
+      o.on("-t", "--ticker=SYMBOL", "Stock ticker SYMBOL to try", /\w+/) do |symbol|
+        options.symbol = symbol
+      end
+
+      o.on("-n", "--num-shares=NUM", "Number of shares in position", Integer) do |num_shares|
+        options.num_shares = num_shares
+      end
+
+      o.on("-d", "--option-date=DATE", "Expiry DATE of option contract", Integer) do |date|
+        date = date.to_s
+        date = "20#{date}" unless date =~ /^20/
+
+        options.option_date = Date.parse(date)
+      end
+
+      o.on("-x", "--option-strike=PRICE", "Option strike PRICE", Float) do |price|
+        options.option_strike = price * 100
+      end
+
+      o.separator ""
+      o.separator "Entry options:"
+
+      o.on("-s", "--entry-stock-price=PRICE", "Stock PRICE to enter at", Float) do |price|
+        options.entry_stock_price = price * 100
+      end
+
+      o.on("-o", "--entry-option-price=PRICE", "Option PRICE to enter at", Float) do |price|
+        options.entry_option_price = price * 100
+      end
+
+      o.separator ""
+      o.separator "Exit options:"
+
+      o.on("-S", "--exit-stock-price=PRICE", "Stock PRICE to exit at", Float) do |price|
+        options.exit_stock_price = price * 100
+      end
+
+      o.on("-O", "--exit-option-price=PRICE", "Option PRICE to exit at", Float) do |price|
+        options.exit_option_price = price * 100
+      end
+
+      o.on("-e", "--exit-days=DAYS", "Exit in n DAYS (default expiry)", Integer) do |days|
+        options.days = days
+      end
+
+      o.on("-E", "--expires", "Hold position until expiry") do
+        options.days = 999999
+      end
+
+      o.separator ""
+      o.separator "Common options:"
+
+      o.on("-c", "--commission=NAME", "Commission fees to apply", /\w+/) do |name|
+        options.commission = Commission.const_get(name.upcase)
+      end
+
+      o.on("-L", "--last", "Use last price instead of bid/ask for stock pricing") do
+        options.last = true
+      end
+
+      o.on_tail("-h", "--help", "Show this message") do
+        puts o
+        exit
+      end
+
+      o.on_tail("-v", "--verbose") do
+        $VERBOSE = true
+      end
+    end
+
+    parser.parse!(args)
+    options
+  end
+end
+
+options = Parser.parse(ARGV) rescue abort($!.message)
+
+unless options.symbol && options.num_shares && options.option_date && options.option_strike
+  abort "Must provide all of -t, -n, -d, -x"
+end
+
+options.entry_stock_price ||= Market.fetch(options.symbol).send(options.last ? :last : :ask)
+
+stock = Stock.new(
+  :symbol => options.symbol, 
+  :price => options.entry_stock_price
+)
+
+call = Call.new(
+  :stock => stock, 
+  :strike => options.option_strike, 
+  :expires => options.option_date
+)
+
+call.price = options.entry_option_price || Market.fetch(call.to_ticker_s).bid
+
+opening_position = CoveredCallPosition.new(
+  :num_shares => options.num_shares, 
+  :date_established => Date.today, 
+  :option => call, 
+  :commission => options.commission
+)
+
+closing_position = CoveredCallExit.new(
+  :opening_position => opening_position,
+  :exit_date => Date.today + options.days,
+  :stock_price => options.exit_stock_price || options.entry_stock_price,
+  :option_price => options.exit_option_price || options.entry_option_price
+)
+
+output = <<EOT
+Entry: %s @ %s, %s @ %s
+
+    Stock Total %s  (inc %s comm)
+  -   Call Sale %s  (inc %s comm)
+  =  Net Outlay %s  (%s per share)
+
+ Downside Protection: %s
+
+Exit: %s @ %s, %s @ %s on %s
+
+#{closing_position.explain.chomp}
+
+     Period Return: %s
+ Annualized Return: %s
+  Days in Position: %s
+
+EOT
+
+puts output % [
+  opening_position.option,
+  opening_position.option.price.to_money_s,
+  opening_position.stock.symbol,
+  opening_position.stock.price.to_money_s,
+  opening_position.stock_total.to_money_s.rjust(12),
+  opening_position.commission.stock_entry.to_money_s,
+  opening_position.call_sale.to_money_s.rjust(12),
+  opening_position.commission.total_option_entry(opening_position.num_shares).to_money_s,
+  opening_position.net_outlay.to_money_s.rjust(12),
+  opening_position.net_per_share.to_money_s,
+
+  opening_position.downside_protection.to_percent_s,
+
+  closing_position.option,
+  closing_position.option.price.to_money_s,
+  closing_position.stock.symbol,
+  closing_position.stock.price.to_money_s,
+  closing_position.exit_date,
+
+  closing_position.period_return.to_percent_s,
+  closing_position.annualized_return.to_percent_s,
+  closing_position.days_in_position
+]
+
+
