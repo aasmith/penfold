@@ -118,7 +118,7 @@ positions.each do |position_name, position|
   output = <<EOT
 Position: %s
 
-Entry: %s @ %s, %s @ %s
+Entry: %s @ %s, %s @ %s [spread %s]
 
     Stock Total %s  (inc %s comm)
   -   Call Sale %s  (inc %s comm)
@@ -126,7 +126,7 @@ Entry: %s @ %s, %s @ %s
 
  Downside Protection: %s
 
-Exit: %s @ %s, %s @ %s on %s
+Exit: %s @ %s, %s @ %s on %s [spread %s]
 
   #{closing_position.explain.chomp}
 
@@ -142,7 +142,9 @@ EOT
     position.option.price.to_money_s,
     position.stock.symbol,
     position.stock.price.to_money_s,
+    (position.stock.price - position.option.price).to_money_s,
     position.stock_total.to_money_s.rjust(12),
+
     position.commission.stock_entry.to_money_s,
     position.call_sale.to_money_s.rjust(12),
     position.commission.total_option_entry(position.num_shares).to_money_s,
@@ -156,6 +158,7 @@ EOT
     closing_position.stock.symbol,
     closing_position.stock.price.to_money_s,
     closing_position.exit_date,
+    (closing_position.stock.price - closing_position.option.price).to_money_s,
 
     closing_position.period_return.to_percent_s,
     closing_position.annualized_return.to_percent_s,
