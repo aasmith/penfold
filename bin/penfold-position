@@ -10,7 +10,7 @@ require 'lib/penfold'
 
 class Parser
   Options = Struct.new(
-    :portfolio, :all, :name, :exit_stock_price, :exit_option_price, :days, :commission
+    :portfolio, :all, :name, :exit_stock_price, :exit_option_price, :days, :commission, :last
   )
 
   def self.parse(args)
@@ -58,6 +58,12 @@ class Parser
       o.on("-c", "--commission=NAME", "Commission fees to apply", /\w+/) do |name|
         options.commission = Commission.const_get(name.upcase)
       end
+      
+      o.on("-L", "--last", "Use last price instead of bid/ask for ",
+                           "stock pricing. Best used when the market ",
+                           "is closed.") do
+        options.last = true
+      end
 
       o.on_tail("-h", "--help", "Show this message") do
         puts o
@@ -89,9 +95,14 @@ positions.each do |position_name, position|
 
   begin
     exit_option_price = 
-      options.exit_option_price || Market.fetch(position.option.to_ticker_s).ask
+      options.exit_option_price || 
+        Market.fetch(position.option.to_ticker_s).ask
+
     exit_stock_price  = 
-      options.exit_stock_price  || Market.fetch(position.stock.symbol.upcase).bid
+      options.exit_stock_price || 
+        Market.fetch(position.stock.symbol.upcase).
+          send(options.last ? :last : :bid)
+
   rescue => e
     puts "Unable to fetch data for position #{position_name}, skipping"
     next

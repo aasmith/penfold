@@ -24,7 +24,9 @@ class Market
 
       doc = Nokogiri::HTML.parse(open(url).read)
 
-      last = (doc.at_css("#yfs_l10_#{ticker.downcase}").text.to_f * 100)
+      # Realtime last is at yfs_l90_sym, use if exists
+      last = (doc.at_css("#yfs_l90_#{ticker.downcase}").text.to_f * 100) rescue nil
+      last ||= (doc.at_css("#yfs_l10_#{ticker.downcase}").text.to_f * 100)
       bid  = (doc.at_css("#yfs_b00_#{ticker.downcase}").text.to_f * 100)
       ask  = (doc.at_css("#yfs_a00_#{ticker.downcase}").text.to_f * 100)
 
