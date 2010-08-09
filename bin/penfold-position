@@ -104,6 +104,7 @@ positions.each do |position_name, position|
           send(options.last ? :last : :bid)
 
   rescue => e
+    puts e if $VERBOSE
     puts "Unable to fetch data for position #{position_name}, skipping"
     next
   end
