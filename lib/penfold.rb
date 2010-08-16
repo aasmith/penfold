@@ -13,6 +13,8 @@ require 'covered_call_early_exit'
 require 'covered_call_expiry_itm_exit'
 require 'covered_call_expiry_otm_exit'
 
+require 'black_scholes'
+
 module Penfold
   VERSION = '1.0.0'
 end

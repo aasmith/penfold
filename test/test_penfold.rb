@@ -268,6 +268,13 @@ class TestPenfold < Test::Unit::TestCase
     end
   end
 
+  # Option pricing
+
+  def test_black_scholes
+    assert_in_delta 0.35725, BlackScholes.call_iv(19.18, 17.50, 0.27, 32, 1.89), 0.0001
+    assert_in_delta 0.25866, BlackScholes.call_iv(19.18, 19, 0.27, 32, 0.68), 0.0001
+  end
+
   # helpers
 
   STOCK_ENTRY = 2_95
