@@ -11,8 +11,8 @@ class Option
     process_args(args)
   end
 
-  def days_to_expiry
-    [0, (expires - current_date).to_i].max
+  def days_to_expiry(opening_date = current_date)
+    [0, (expires - opening_date).to_i].max
   end
 
   def expired?

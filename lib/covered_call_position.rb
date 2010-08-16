@@ -36,7 +36,35 @@ class CoveredCallPosition
   def stock
     option.stock
   end
-  
+
+  def implied_volatility
+    @iv ||= BlackScholes.call_iv(
+      stock.price / 100.0, 
+      option.strike / 100.0, 
+      0.27, # TODO: risk-free rate
+      option.days_to_expiry(date_established),
+      option.price / 100.0
+    )
+  end
+
+  def probability_max_profit
+    BlackScholes.probability_above(
+      stock.price / 100.0,
+      option.strike / 100.0,
+      option.days_to_expiry(date_established),
+      implied_volatility
+    )
+  end
+
+  def probability_profit
+    BlackScholes.probability_above(
+      stock.price / 100.0,
+      net_per_share / 100.0,
+      option.days_to_expiry(date_established),
+      implied_volatility
+    )
+  end
+
 #  def exit(exit_date = Date.today + 1, stock_price = stock.price)
 #    CoveredCallExit.new(
 #      :opening_position => self,

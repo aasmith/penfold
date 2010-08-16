@@ -118,8 +118,8 @@ positions.each do |position_name, position|
 
   output = <<EOT
 Position: %s
-
 Entry: %s @ %s, %s @ %s [spread %s]
+       IV %.2f%%     Probability (Max) Profit (%.2f%%) %.2f%%
 
     Stock Total %s  (inc %s comm)
   -   Call Sale %s  (inc %s comm)
@@ -144,8 +144,12 @@ EOT
     position.stock.symbol,
     position.stock.price.to_money_s,
     (position.stock.price - position.option.price).to_money_s,
-    position.stock_total.to_money_s.rjust(12),
 
+    position.implied_volatility * 100,
+    position.probability_max_profit * 100,
+    position.probability_profit * 100,
+
+    position.stock_total.to_money_s.rjust(12),
     position.commission.stock_entry.to_money_s,
     position.call_sale.to_money_s.rjust(12),
     position.commission.total_option_entry(position.num_shares).to_money_s,
