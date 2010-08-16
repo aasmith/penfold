@@ -100,6 +100,47 @@ class BlackScholes
     def call_iv(s,x,r,t,o)
       option_implied_volatility(true,s,x,r/100.0,t/365.0,o)
     end
+
+    # Returns probability of occuring below and above target price.
+    def probability(price, target, days, volatility)
+      p = price.to_f
+      q = target.to_f
+      t = days / 365.0
+      v = volatility.to_f
+
+      vt = v*Math.sqrt(t)
+      lnpq = Math.log(q/p)
+
+      d1 = lnpq / vt
+
+      y = (1/(1+0.2316419*d1.abs)*100000).floor / 100000.0
+      z = (0.3989423*Math.exp(-((d1*d1)/2))*100000).floor / 100000.0
+
+      y5 = 1.330274*(y**5)
+      y4 = 1.821256*(y**4)
+      y3 = 1.781478*(y**3)
+      y2 = 0.356538*(y**2)
+      y1 = 0.3193815*y
+
+      x = 1-z*(y5-y4+y3-y2+y1)
+
+      x = (x*100000).floor / 100000.0
+
+      x = 1-x if d1 < 0
+
+      pbelow = (x*1000).floor / 10.0
+      pabove = ((1-x)*1000).floor / 10.0;
+
+      [pbelow/100,pabove/100];
+    end
+
+    def probability_above(price, target, days, volatility)
+      probability(price, target, days, volatility)[1]
+    end
+
+    def probability_below(price, target, days, volatility)
+      probability(price, target, days, volatility)[0]
+    end
   end
 end
 

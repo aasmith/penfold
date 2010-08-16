@@ -275,6 +275,18 @@ class TestPenfold < Test::Unit::TestCase
     assert_in_delta 0.25866, BlackScholes.call_iv(19.18, 19, 0.27, 32, 0.68), 0.0001
   end
 
+  def test_probability
+    vol = BlackScholes.call_iv(19.18, 19, 0.27, 32, 0.68)
+
+    below, above = BlackScholes.probability(19.18, 19, 32, vol)
+
+    assert_in_delta 0.548, above, 0.001
+    assert_in_delta 0.451, below, 0.001
+
+    assert_equal above, BlackScholes.probability_above(19.18, 19, 32, vol)
+    assert_equal below, BlackScholes.probability_below(19.18, 19, 32, vol)
+  end
+
   # helpers
 
   STOCK_ENTRY = 2_95
