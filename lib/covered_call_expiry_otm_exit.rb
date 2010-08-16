@@ -9,6 +9,8 @@ module CoveredCallExpiryOtmExit
     Stock Sale %s (%s per share)
   - Net Outlay %s
   =     Profit %s
+
+
     EOT
 
     template % [

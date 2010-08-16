@@ -10,6 +10,7 @@ module CoveredCallExpiryItmExit
   =    Net Proceeds %s (%s per share)
   -      Net Outlay %s
   =          Profit %s
+
     EOT
 
     template % [
