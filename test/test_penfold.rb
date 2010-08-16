@@ -203,7 +203,11 @@ class TestPenfold < Test::Unit::TestCase
       )
     )
 
-    closing_position = position.exit(date + 31, 55_00)
+    closing_position = CoveredCallExit.new(
+      :opening_position => position,
+      :exit_date => date + 34,
+      :stock_price => 55_00
+    )
 
     assert_not_same position.stock, closing_position.stock
     assert_equal position.stock, closing_position.stock
