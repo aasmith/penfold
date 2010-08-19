@@ -23,3 +23,10 @@ class Numeric
   end
 end
 
+class Array
+  def in_groups_of(n)
+    raise ArgumentError, "Data is not in multiples of #{n}" unless size % n == 0
+    
+    inject([[]]) { |a,e| (a.last.size == n) ? (a << [e]) : (a.last << e);  a }
+  end
+end
