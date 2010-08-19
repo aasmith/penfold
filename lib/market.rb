@@ -8,6 +8,10 @@ class Market
       process_args(args)
     end
 
+    def mid
+      @mid ||= [bid, ask].reduce(:+) / 2.0
+    end
+
     def inspect
       "<L:%s B:%s A:%s>" % [last.to_money_s, bid.to_money_s, ask.to_money_s]
     end
