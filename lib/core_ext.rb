@@ -18,8 +18,8 @@ class Numeric
     ("$%g" % (self / 100.0)).commify.sub(/\.(\d)\Z/, '.\10')
   end
 
-  def to_percent_s
-    "%g%" % (self * 100)
+  def to_percent_s(p = nil)
+    (p ? "%.#{p}f%%" : "%g%%") % (self * 100)
   end
 end
 
