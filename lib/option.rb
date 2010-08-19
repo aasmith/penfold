@@ -1,7 +1,7 @@
 class Option
   include ArgumentProcessor
 
-  attr_accessor :stock, :strike, :expires, :price, :current_date
+  attr_accessor :symbol, :stock, :strike, :expires, :price, :current_date
 
   def initialize(args = {})
     raise ArgumentError, "An option cannot be instantiated" if instance_of? Option
@@ -51,6 +51,8 @@ class Option
   end
 
   def to_ticker_s
+    return symbol if symbol
+
     call_or_put = call? ? "C" : "P"
 
     dollar  = (strike.to_i / 100).to_s.rjust(5, "0")
