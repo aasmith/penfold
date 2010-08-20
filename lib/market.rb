@@ -64,10 +64,7 @@ class Market
         search("//table[@class='yfnc_datamodoutline1'][1]//td[@class='yfnc_h']").
         map   { |e| e.text }
 
-      #raise IOError, "Data is not in multiples of 8" unless itm_call_data.size % 8 == 0
-
       rows = itm_call_data.in_groups_of(8)
-        #inject([[]]) { |a,e| (a.last.size == 8) ? (a << [e]) : (a.last << e);  a }
 
       rows.map do |row|
         strike = row[0].to_f * 100
