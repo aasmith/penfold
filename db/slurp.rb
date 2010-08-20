@@ -13,6 +13,7 @@ else
   %w(VZ C GE DVY PGR COCO BP RIG)
 end
 
+#series = "100827"
 series = "100821"
 #series = "100918"
 expiry = Date.strptime series, "%y%m%d"
@@ -40,6 +41,13 @@ symbols.each do |symbol|
 
   stock = Stock.new(:symbol => symbol, :price => quote.last)
 
+  num_shares = ((INVESTMENT_AMOUNT / stock.price) / 100.0).floor * 100
+
+  if num_shares.zero?
+    puts "Skipping because #{INVESTMENT_AMOUNT.to_money_s} will not buy any shares of #{symbol} @ #{stock.price.to_money_s}."
+    next
+  end
+
   begin
     itm_option_quotes = Market.chain(symbol, expiry)
   rescue
@@ -57,16 +65,8 @@ symbols.each do |symbol|
       :strike => strike,
       :expires => expiry,
       :price => quote.bid, # TODO: parametize
-      #:price => [quote.bid, quote.ask].reduce(:+) / 2.0, # TODO: parametize
       :current_date => quote_date
     )
-  end
-
-  num_shares = ((INVESTMENT_AMOUNT / stock.price) / 100.0).floor * 100
-
-  if num_shares.zero?
-    puts "Skipping because #{INVESTMENT_AMOUNT.to_money_s} will not buy any shares of #{symbol} @ #{stock.price.to_money_s}."
-    next
   end
 
   positions = itm_options.map do |option|
