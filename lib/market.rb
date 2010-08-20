@@ -50,8 +50,6 @@ class Market
       quote
     end
 
-    # Handle weeklys; there will be other options expiring on the same month page
-    # but with a different date - select expiry based on symbol
     def chain(ticker, expiry)
       url = "http://finance.yahoo.com/q/op?s=%s&m=%s" % [ticker, expiry.strftime("%Y-%m")]
       print "Fetching #{url}..." if $VERBOSE
@@ -75,11 +73,15 @@ class Market
 
         raise "Expected symbol, got #{symbol.inspect}" unless symbol =~ /^\w+\d+[CP]\d+$/
 
+        # Only pick symbols that have the correct expiry
+        # Occurs when multiple series appear for the same month (i.e. weeklys)
+        next unless symbol =~ /#{expiry.strftime("%y%m%d")}/
+
         quote =  Quote.new(
           :symbol => symbol, :last => last, :bid => bid, :ask => ask)
 
         [strike, quote]
-      end
+      end.compact
     end
 
     def event?(ticker, on_or_before_date)
