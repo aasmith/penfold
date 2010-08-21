@@ -18,9 +18,16 @@ end
 series = ARGV[1]
 expiry = Date.strptime series, "%y%m%d"
 
-types = %w(C) # Call & Put
+today = Date.today
 
-quote_date = Date.today # FIXME handle weekends
+quote_date = if [6,7].include?(today.wday)
+  # weekend, wind back to friday
+  today + (5 - today.wday)
+else
+  today
+end
+
+puts "Quote date is #{quote_date.inspect}"
 
 INVESTMENT_AMOUNT = 10_000_00 # $10,000.00
 
