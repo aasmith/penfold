@@ -13,9 +13,9 @@ else
   %w(VZ C GE DVY PGR COCO BP RIG)
 end
 
-#series = "100827"
-series = "100821"
-#series = "100918"
+# series is the option symbol timestamp,
+# such as 100821, 100918, etc.
+series = ARGV[1]
 expiry = Date.strptime series, "%y%m%d"
 
 types = %w(C) # Call & Put
