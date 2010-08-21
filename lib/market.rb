@@ -47,7 +47,7 @@ class Market
         :symbol => ticker, :last => last, :bid => bid, :ask => ask)
 
       if opts[:extra]
-        name   = doc.search('.title h2').text
+        name   = doc.at('h1').text.scan(/(.*) \(\w+\)$/).to_s # strip trailing (SYMBOL)
         mktcap = doc.at_css("#yfs_j10_#{ticker.downcase}").text rescue nil
 
         quote.extra = {:name => name, :mktcap => mktcap}
