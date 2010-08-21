@@ -20,9 +20,9 @@ expiry = Date.strptime series, "%y%m%d"
 
 today = Date.today
 
-quote_date = if [6,7].include?(today.wday)
+quote_date = if [6,0].include?(today.wday)
   # weekend, wind back to friday
-  today + (5 - today.wday)
+  today - (today.wday.zero? ? 2 : 1)
 else
   today
 end
