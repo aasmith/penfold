@@ -39,14 +39,14 @@ symbols.each do |symbol|
 
   begin
     # Get a delayed quote, as option quotes are delayed.
-    quote = Market.fetch(symbol, false)
+    stock_quote = Market.fetch(symbol, :try_rt => false, :extra => true)
   rescue
     puts "Error getting #{symbol}"
     puts $!
     next
   end
 
-  stock = Stock.new(:symbol => symbol, :price => quote.last)
+  stock = Stock.new(:symbol => symbol, :price => stock_quote.last)
 
   num_shares = ((INVESTMENT_AMOUNT / stock.price) / 100.0).floor * 100
 
@@ -65,13 +65,13 @@ symbols.each do |symbol|
 
   event = Market.event?(symbol, expiry)
 
-  itm_options = itm_option_quotes.map do |strike, quote|
+  itm_options = itm_option_quotes.map do |strike, option_quote|
     Call.new(
-      :symbol => quote.symbol,
+      :symbol => option_quote.symbol,
       :stock => stock,
       :strike => strike,
       :expires => expiry,
-      :price => quote.bid, # TODO: parametize
+      :price => option_quote.bid, # TODO: parametize
       :current_date => quote_date
     )
   end
@@ -141,7 +141,9 @@ SUMMARY
         :period_return       => close.period_return * 100.0,
         :annual_return       => close.annualized_return * 100.0,
         :event               => event,
-        :label               => File.split(filename).last
+        :label               => File.split(filename).last,
+        :mktcap              => stock_quote.extra[:mktcap],
+        :name                => stock_quote.extra[:name]
       )
     end
   end

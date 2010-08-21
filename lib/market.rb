@@ -7,10 +7,11 @@ class Market
   class Quote
     include ArgumentProcessor
 
-    attr_accessor :symbol, :last, :bid, :ask
+    attr_accessor :symbol, :last, :bid, :ask, :extra
 
     def initialize(args = {})
       process_args(args)
+      self.extra = {}
     end
 
     def mid
@@ -25,7 +26,7 @@ class Market
   end
 
   class << self
-    def fetch(ticker, try_rt = true)
+    def fetch(ticker, opts = {})
       url = "http://finance.yahoo.com/q?s=%s" % ticker
       print "Fetching #{url}..." if $VERBOSE
 
@@ -34,7 +35,7 @@ class Market
       end
 
       # Realtime last is at yfs_l90_sym, use if exists
-      if try_rt
+      if opts[:try_rt]
         last = (doc.at_css("#yfs_l90_#{ticker.downcase}").text.to_f * 100) rescue nil
       end
 
@@ -44,6 +45,13 @@ class Market
 
       quote = Quote.new(
         :symbol => ticker, :last => last, :bid => bid, :ask => ask)
+
+      if opts[:extra]
+        name   = doc.search('.title h2').text
+        mktcap = doc.at_css("#yfs_j10_#{ticker.downcase}").text rescue nil
+
+        quote.extra = {:name => name, :mktcap => mktcap}
+      end
 
       puts quote.inspect if $VERBOSE
 

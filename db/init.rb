@@ -27,6 +27,8 @@ DB.create_table :covered_calls do
   Boolean :event, :null => false
 
   String  :label
+  String  :mktcap
+  String  :name
 
   index :annual_return
   index :downside_protection
