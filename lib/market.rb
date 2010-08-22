@@ -121,7 +121,7 @@ class Market
 
       begin
         block.call
-      rescue
+      rescue Exception
         retries -= 1
         unless retries.zero?
           puts "Got error, retrying"
