@@ -50,7 +50,30 @@ class Market
         name   = doc.at('h1').text.scan(/(.*) \([\w-]+\)$/).to_s # strip trailing (SYMBOL)
         mktcap = doc.at_css("#yfs_j10_#{ticker.downcase}").text rescue nil
 
-        quote.extra = {:name => name, :mktcap => mktcap}
+        divyield = doc.at("#table2 .end td").text.scan(/\((.*)\)/).to_s.to_f rescue nil
+
+        begin
+          pe_row = doc.at("#table2 tr:nth-child(6)")
+          pe_label, pe_data = pe_row.search("th,td").map{|e|e.text}
+
+          unless pe_label =~ %r(P/E)
+            puts "P/E label mismatch" 
+            pe_data = nil
+          end
+        rescue
+          # nothing
+        end
+
+        sector, industry = doc.search("#company_details a").map{|e|e.text} rescue nil
+
+        quote.extra = {
+          :name => name,
+          :mktcap => mktcap,
+          :divyield => divyield,
+          :pe => pe_data.to_f,
+          :sector => sector,
+          :industry => industry
+        }
       end
 
       puts quote.inspect if $VERBOSE

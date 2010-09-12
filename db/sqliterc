@@ -1,4 +1,4 @@
 -- Place this in ~/.sqliterc
 .headers on
 .mode column
-.width 5 10 4 5 7 24 6 6 6 6 6 6 6 6 16 10 40 covered_calls
+.width 5 10 4 5 7 24 6 6 6 6 6 6 6 6 16 10 40 5 7 10 25 covered_calls

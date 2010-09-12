@@ -143,7 +143,11 @@ SUMMARY
         :event               => event,
         :label               => File.split(filename).last,
         :mktcap              => stock_quote.extra[:mktcap],
-        :name                => stock_quote.extra[:name]
+        :name                => stock_quote.extra[:name],
+        :divyield            => stock_quote.extra[:divyield],
+        :pe                  => stock_quote.extra[:pe],
+        :sector              => stock_quote.extra[:sector],
+        :industry            => stock_quote.extra[:industry]
       )
     end
   end
