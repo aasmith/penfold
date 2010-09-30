@@ -1,3 +1,9 @@
+# Cash settled indices; ignored.
+# ^OEX
+# ^XEO
+# ^DJX
+# ^GSPC
+# ^NDX
 EEM
 FAS
 FAZ
