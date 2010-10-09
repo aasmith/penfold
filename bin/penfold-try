@@ -80,7 +80,7 @@ class Parser
       o.separator "Common options:"
 
       o.on("-c", "--commission=NAME", "Commission fees to apply", /\w+/) do |name|
-        options.commission = Commission.const_get(name.upcase)
+        options.commission = Commission.const_get(name)
       end
 
       o.on("-L", "--last", "Use last price instead of bid/ask for stock pricing") do

@@ -56,7 +56,7 @@ class Parser
       o.separator "Common options:"
 
       o.on("-c", "--commission=NAME", "Commission fees to apply", /\w+/) do |name|
-        options.commission = Commission.const_get(name.upcase)
+        options.commission = Commission.const_get(name)
       end
       
       o.on("-L", "--last", "Use last price instead of bid/ask for ",
@@ -152,7 +152,7 @@ EOT
     position.stock_total.to_money_s.rjust(12),
     position.commission.stock_entry.to_money_s,
     position.call_sale.to_money_s.rjust(12),
-    position.commission.total_option_entry(position.num_shares).to_money_s,
+    position.commission.option_entry.to_money_s,
     position.net_outlay.to_money_s.rjust(12),
     position.net_per_share.to_money_s,
 

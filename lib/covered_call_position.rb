@@ -1,10 +1,20 @@
 class CoveredCallPosition
   include ArgumentProcessor
 
-  attr_accessor :num_shares, :date_established, :option, :commission
+  attr_accessor :num_shares, :date_established, :option
 
   def initialize(args = {})
     process_args(args)
+  end
+
+  def commission=(name)
+    @commission = name.to_s
+  end
+
+  def commission
+    @commission_instance ||= Commission.const_get(@commission).new(
+      :shares => num_shares, :contracts => num_shares / 100
+    )
   end
 
   undef num_shares=
@@ -18,7 +28,7 @@ class CoveredCallPosition
   end
 
   def call_sale
-    num_shares * option.price - commission.total_option_entry(num_shares)
+    num_shares * option.price - commission.option_entry
   end
 
   def net_outlay

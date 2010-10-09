@@ -3,17 +3,6 @@ require "flexmock/test_unit"
 require "penfold"
 
 class TestPenfold < Test::Unit::TestCase
-  # commission
-  def test_total_option_commission
-    commission = Commission.new(
-      :stock_entry => 2_95, 
-      :option_entry => 8_50, 
-      :option_entry_per_contract => 15,
-      :option_assignment => 5_00)
-
-    assert_equal 8_50 + 15, commission.total_option_entry(100)
-    assert_equal 8_50 + 30, commission.total_option_entry(200)
-  end
 
   # options
   def test_call_type
@@ -118,30 +107,30 @@ class TestPenfold < Test::Unit::TestCase
     position = CoveredCallPosition.new(
       :num_shares => 500, 
       :option => Call.new(:stock => Stock.new(:price => 50_00)), 
-      :commission => commission
+      :commission => "OptionsHouse"
     )
     
-    assert_equal 500 * 50_00 + STOCK_ENTRY, position.stock_total
+    assert_equal 500 * 50_00 + position.commission.stock_entry, position.stock_total
   end
 
   def test_call_sale
     position = CoveredCallPosition.new(
       :num_shares => 500,
       :option => Call.new(:price => 6_00),
-      :commission => commission
+      :commission => "OptionsHouse"
     )
 
-    assert_equal 3_000_00 - (OPTION_ENTRY + 5 * PER_CONTRACT), position.call_sale
+    assert_equal 3_000_00 - (position.commission.option_entry), position.call_sale
   end
 
   def test_net_outlay
     position = flexmock(
       CoveredCallPosition.new, 
-      :stock_total => 25_000_00 + STOCK_ENTRY, 
-      :call_sale => 3_000_00 - (OPTION_ENTRY + 5 * PER_CONTRACT)
+      :stock_total => 25_000_00,
+      :call_sale => 3_000_00
     )
 
-    assert_equal 22_012_20, position.net_outlay
+    assert_equal 22_000_00, position.net_outlay
   end
 
   def test_net_per_share
@@ -189,7 +178,7 @@ class TestPenfold < Test::Unit::TestCase
 
     position = CoveredCallPosition.new(
       :num_shares => 500,
-      :commission => Commission::OPTIONS_HOUSE,
+      :commission => "OptionsHouse",
       :date_established => date,
 
       :option => Call.new(
@@ -287,18 +276,40 @@ class TestPenfold < Test::Unit::TestCase
     assert_equal below, BlackScholes.probability_below(19.18, 19, 32, vol)
   end
 
-  # helpers
+  # comms
 
-  STOCK_ENTRY = 2_95
-  OPTION_ENTRY = 8_50
-  PER_CONTRACT = 15
+  def test_optionshouse
+    (0..10).each do |i|
+      cost = 8_50 + (i * 15)
 
-  def commission
-    Commission.new(
-      :stock_entry => STOCK_ENTRY, 
-      :option_entry => OPTION_ENTRY, 
-      :option_entry_per_contract => PER_CONTRACT,
-      :option_assignment => 5_00
-    )
+      oh = Commission::OptionsHouse.new(:contracts => i)
+      assert_equal i.zero? ? 0 : cost, oh.option_entry
+    end
+
+    oh = Commission::OptionsHouse.new(:shares => 0)
+    assert_equal 0, oh.stock_entry
+
+    oh = Commission::OptionsHouse.new(:shares => 123)
+    assert_equal 2_95, oh.stock_entry
+
+    oh = Commission::OptionsHouse.new
+    assert_equal 0, oh.stock_entry
+    assert_equal 0, oh.option_entry
+    assert_equal 0, oh.option_assignment
+  end
+
+  def test_optionshouse_alt
+    opt_comms = [
+      [0, 0],
+      [4, 5_00],
+      [5, 5_00],
+      [6, 6_00]
+    ]
+
+    opt_comms.each do |num_contracts, cost|
+      oha = Commission::OptionsHouseAlt.new(:shares => 0, :contracts => num_contracts)
+      assert_equal cost, oha.option_entry
+      assert_equal num_contracts.zero? ? 0 : 5_00, oha.option_assignment
+    end
   end
 end

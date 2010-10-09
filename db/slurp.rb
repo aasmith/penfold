@@ -78,7 +78,7 @@ symbols.each do |symbol|
 
   positions = itm_options.map do |option|
     CoveredCallPosition.new(
-      :commission => Commission::OPTIONS_HOUSE,
+      :commission => Commission::OptionsHouse,
       :num_shares => num_shares,
       :date_established => Date.today,
       :option => option

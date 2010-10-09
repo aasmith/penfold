@@ -63,10 +63,6 @@ class CoveredCallExit
     opening_position.num_shares
   end
 
-  def num_options
-    opening_position.num_options
-  end
-
   def exit_date
     opening_position.date_established + days_in_position
   end
@@ -80,7 +76,7 @@ class CoveredCallExit
   end
 
   def option_sale
-    (num_shares * option.price) - commission.total_option_entry(num_shares)
+    (num_shares * option.price) - commission.option_entry
   end
 end
 
