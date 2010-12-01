@@ -65,6 +65,12 @@ symbols.each do |symbol|
 
   event = Market.event?(symbol, expiry)
 
+  current_price = stock.price / 100.0
+  prices = Market.historical_prices(symbol)
+
+  above = prices.select { |price| price >= current_price }
+  percent_above = above.size / prices.size.to_f
+
   itm_options = itm_option_quotes.map do |strike, option_quote|
     Call.new(
       :symbol => option_quote.symbol,
@@ -147,7 +153,8 @@ SUMMARY
         :divyield            => stock_quote.extra[:divyield],
         :pe                  => stock_quote.extra[:pe],
         :sector              => stock_quote.extra[:sector],
-        :industry            => stock_quote.extra[:industry]
+        :industry            => stock_quote.extra[:industry],
+        :percent_above       => percent_above * 100.0
       )
     end
   end

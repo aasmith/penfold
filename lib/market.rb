@@ -139,6 +139,22 @@ class Market
       end
     end
 
+    def historical_prices(ticker, from = Date.today - 365)
+      to = Date.today
+
+      url = "http://ichart.finance.yahoo.com/table.csv?s=%s&a=%s&b=%s&c=%s&d=%se=%s&f=%sg=d&ignore=.csv"
+      url = url % [ticker, from.month - 1, from.day, from.year, to.month - 1, to.year, to.day]
+
+      print "Fetching #{url}..." if $VERBOSE
+
+      csv = with_retry do
+        open(url).read
+      end
+
+      # [newest, ..., oldest]
+      csv.scan(/\d+\.\d+$/).map { |p| p.to_f }
+    end
+
     def with_retry(&block)
       retries = 5
 
