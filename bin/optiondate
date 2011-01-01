@@ -1,0 +1,17 @@
+#!/usr/bin/env ruby
+
+# optiondate [num of days]
+
+LIB_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
+$LOAD_PATH << LIB_DIR
+
+require 'lib/option_calendar'
+
+unless ARGV.size == 1 and ARGV.to_s =~ /^\d+$/
+  abort "usage: #{File.basename($0)} [num of days]"
+end
+
+expiry = OptionCalendar.nearest_expiration(Date.today, ARGV[0].to_i.days)
+
+puts expiry.strftime("%y%m%d")
+
