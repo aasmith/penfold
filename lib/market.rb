@@ -2,6 +2,7 @@ require 'rubygems'
 require 'nokogiri'
 require 'open-uri'
 require 'date'
+require 'cgi'
 
 class Market
   class Quote
@@ -153,6 +154,26 @@ class Market
 
       # [newest, ..., oldest]
       csv.scan(/\d+\.\d+$/).map { |p| p.to_f }
+    end
+
+    def constituents(ticker, offset = 0, traverse = true)
+      ticker = "^#{ticker}" unless ticker =~ /^\^/
+
+      url = "http://finance.yahoo.com/q/cp?s=%s&c=%s" % [CGI.escape(ticker), offset]
+      print "Fetching #{url}..." if $VERBOSE
+
+      doc = with_retry do
+        Nokogiri::HTML.parse(open(url).read)
+      end
+
+      symbols = doc.at("#yfncsumtab").search("tr td:first-child.yfnc_tabledata1").map{ |td| td.text }
+      next_link = doc.at("#yfncsumtab").at("//a[text()='Next']")
+
+      if next_link && traverse
+        return symbols + constituents(ticker, offset + 1)
+      end
+
+      return symbols
     end
 
     def with_retry(&block)

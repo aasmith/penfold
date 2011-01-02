@@ -1,0 +1,11 @@
+#!/usr/bin/env ruby
+
+abort "usage: #{File.basename($0)} [index]" unless ARGV[0]
+
+LIB_DIR = File.expand_path(File.join(File.dirname(__FILE__), '..', 'lib'))
+$LOAD_PATH << LIB_DIR
+
+require 'lib/penfold'
+
+puts "# Generated at #{Time.now}"
+puts Market.constituents(ARGV[0]).join("\n")
