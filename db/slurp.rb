@@ -153,6 +153,11 @@ SUMMARY
         flag |= (1 << i) if member_of_index
       end
 
+      mktcap = stock_quote.extra[:mktcap]
+      multiplier = mktcap.scan(/.$/).to_s
+      mktcap = mktcap.to_f
+      mktcap = multiplier == "B" ? mktcap * 1_000_000_000 : multiplier == "M" ? mktcap * 1_000_000 : nil
+
       calls.insert(
         :quote_date          => quote_date,
         :days                => close.days_in_position,
@@ -168,7 +173,7 @@ SUMMARY
         :annual_return       => close.annualized_return * 100.0,
         :event               => event,
         :label               => File.split(filename).last,
-        :mktcap              => stock_quote.extra[:mktcap],
+        :mktcap              => mktcap,
         :name                => stock_quote.extra[:name],
         :divyield            => stock_quote.extra[:divyield],
         :pe                  => stock_quote.extra[:pe],
