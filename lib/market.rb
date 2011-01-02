@@ -176,6 +176,14 @@ class Market
       return symbols
     end
 
+    INDEXES = {}
+
+    def member_of?(ticker, index_ticker)
+      index_members = INDEXES[index_ticker] ||= constituents(index_ticker)
+
+      index_members.include?(ticker)
+    end
+
     def with_retry(&block)
       retries = 5
 

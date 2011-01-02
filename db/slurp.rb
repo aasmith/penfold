@@ -31,6 +31,13 @@ puts "Quote date is #{quote_date.inspect}"
 
 INVESTMENT_AMOUNT = 10_000_00 # $10,000.00
 
+# Do not reorder these, only append.
+# DJI  = 1
+# OEX  = 2
+# SPX  = 4
+# ETFS = 8
+INDEX_SYMBOLS = %w(DJI OEX SPX ETFS)
+
 DB = Sequel.sqlite("options.sqlite")
 calls = DB[:covered_calls]
 
@@ -133,6 +140,19 @@ SUMMARY
         event ? "EVENT IN DURATION" : ""
       ]
 
+
+      flag = 0
+
+      INDEX_SYMBOLS.each_with_index do |index_symbol, i|
+        member_of_index = if File.exists?(fn = "symbols/#{index_symbol.downcase}.txt")
+          File.read(fn).include?("\n#{stock.symbol}\n")
+        else
+          Market.member_of?(stock.symbol, index_symbol)
+        end
+
+        flag |= (1 << i) if member_of_index
+      end
+
       calls.insert(
         :quote_date          => quote_date,
         :days                => close.days_in_position,
@@ -154,7 +174,8 @@ SUMMARY
         :pe                  => stock_quote.extra[:pe],
         :sector              => stock_quote.extra[:sector],
         :industry            => stock_quote.extra[:industry],
-        :percent_above       => percent_above * 100.0
+        :percent_above       => percent_above * 100.0,
+        :memberships         => flag
       )
     end
   end
