@@ -108,7 +108,14 @@ symbols.each do |symbol|
     )
   
     strike = position.option.strike / 100.0
-    prices = Market.historical_prices(stock.symbol)
+
+    begin
+      prices = Market.historical_prices(stock.symbol)
+    rescue
+      puts "No historical pricing available for #{symbol}"
+      puts $!
+      next
+    end
 
     above = prices.select { |price| price >= strike }
     percent_above = above.size / prices.size.to_f
@@ -154,9 +161,12 @@ SUMMARY
       end
 
       mktcap = stock_quote.extra[:mktcap]
-      multiplier = mktcap.scan(/.$/).to_s
-      mktcap = mktcap.to_f
-      mktcap = multiplier == "B" ? mktcap * 1_000_000_000 : multiplier == "M" ? mktcap * 1_000_000 : nil
+
+      if mktcap
+        multiplier = mktcap.scan(/.$/).to_s
+        mktcap = mktcap.to_f
+        mktcap = multiplier == "B" ? mktcap * 1_000_000_000 : multiplier == "M" ? mktcap * 1_000_000 : nil
+      end
 
       calls.insert(
         :quote_date          => quote_date,
