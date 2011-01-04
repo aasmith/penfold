@@ -36,7 +36,8 @@ INVESTMENT_AMOUNT = 10_000_00 # $10,000.00
 # OEX  = 2
 # SPX  = 4
 # ETFS = 8
-INDEX_SYMBOLS = %w(DJI OEX SPX ETFS)
+# NONE = 16
+INDEX_SYMBOLS = %w(DJI OEX SPX ETFS NONE)
 
 DB = Sequel.sqlite("options.sqlite")
 calls = DB[:covered_calls]
@@ -148,7 +149,7 @@ SUMMARY
       ]
 
 
-      flag = 0
+      flag = 1 << INDEX_SYMBOLS.index("NONE")
 
       INDEX_SYMBOLS.each_with_index do |index_symbol, i|
         member_of_index = if File.exists?(fn = "symbols/#{index_symbol.downcase}.txt")
