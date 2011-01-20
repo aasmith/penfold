@@ -1,8 +1,9 @@
-require 'rubygems'
-require 'nokogiri'
-require 'open-uri'
 require 'date'
 require 'cgi'
+
+require 'rubygems'
+require 'nokogiri'
+require 'net/http/persistent'
 
 class Market
   HEADERS = {
@@ -10,11 +11,12 @@ class Market
     "Accept-Charset" => "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
     "Accept-Language" => "en-US,en;q=0.8",
     "Cache-Control" => "max-age=0",
-    "Connection" => "keep-alive",
     "Host" => "finance.yahoo.com",
     "Referer" => "http://finance.yahoo.com/",
     "User-Agent" => "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/534.10 (KHTML, like Gecko) Chrome/8.0.552.215 Safari/534.10"
   }
+
+  @http = Net::HTTP::Persistent.new
 
   class Quote
     include ArgumentProcessor
@@ -38,12 +40,25 @@ class Market
   end
 
   class << self
+    def get(url)
+      uri = URI.parse(url)
+
+      request = Net::HTTP::Get.new uri.request_uri
+
+      HEADERS.each do |name, value|
+        request.add_field name, value
+      end
+
+      response = @http.request(uri, request)
+      response.body
+    end
+
     def fetch(ticker, opts = {})
       url = "http://finance.yahoo.com/q?s=%s" % ticker
       puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url, HEADERS).read)
+        Nokogiri::HTML.parse(get(url))
       end
 
       # Realtime last is at yfs_l90_sym, use if exists
@@ -135,7 +150,7 @@ class Market
       puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url, HEADERS).read)
+        Nokogiri::HTML.parse(get(url))
       end
 
       itm_call_data = doc.
@@ -169,7 +184,7 @@ class Market
       puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url, HEADERS).read)
+        Nokogiri::HTML.parse(get(url))
       end
 
       return false if doc.text =~ /There is no Company Events data/
@@ -197,7 +212,7 @@ class Market
       puts "Fetching #{url}..." if $VERBOSE
 
       csv = with_retry do
-        open(url, HEADERS).read
+        get(url)
       end
 
       # [newest, ..., oldest]
@@ -211,7 +226,7 @@ class Market
       puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url, HEADERS).read)
+        Nokogiri::HTML.parse(get(url))
       end
 
       symbols = doc.at("#yfncsumtab").search("tr td:first-child.yfnc_tabledata1").map{ |td| td.text }
