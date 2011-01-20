@@ -73,6 +73,16 @@ symbols.each do |symbol|
 
   event = Market.event?(symbol, expiry)
 
+  begin
+    prices = Market.historical_prices(stock.symbol)
+  rescue
+    puts "No historical pricing available for #{symbol}"
+    puts $!
+    next
+  end
+
+
+
   itm_options = itm_option_quotes.map do |strike, option_quote|
     Call.new(
       :symbol => option_quote.symbol,
@@ -108,16 +118,8 @@ symbols.each do |symbol|
       :option_price => position.option.price
     )
   
+    # calculate percentage above strike for year
     strike = position.option.strike / 100.0
-
-    begin
-      prices = Market.historical_prices(stock.symbol)
-    rescue
-      puts "No historical pricing available for #{symbol}"
-      puts $!
-      next
-    end
-
     above = prices.select { |price| price >= strike }
     percent_above = above.size / prices.size.to_f
 
