@@ -154,6 +154,8 @@ SUMMARY
       flag = 1 << INDEX_SYMBOLS.index("NONE")
 
       INDEX_SYMBOLS.each_with_index do |index_symbol, i|
+        next if index_symbol == "NONE"
+
         member_of_index = if File.exists?(fn = "symbols/#{index_symbol.downcase}.txt")
           File.read(fn).include?("\n#{stock.symbol}\n")
         else

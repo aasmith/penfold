@@ -5,6 +5,17 @@ require 'date'
 require 'cgi'
 
 class Market
+  HEADERS = {
+    "Accept" => "application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
+    "Accept-Charset" => "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
+    "Accept-Language" => "en-US,en;q=0.8",
+    "Cache-Control" => "max-age=0",
+    "Connection" => "keep-alive",
+    "Host" => "finance.yahoo.com",
+    "Referer" => "http://finance.yahoo.com/",
+    "User-Agent" => "Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US) AppleWebKit/534.10 (KHTML, like Gecko) Chrome/8.0.552.215 Safari/534.10"
+  }
+
   class Quote
     include ArgumentProcessor
 
@@ -29,10 +40,10 @@ class Market
   class << self
     def fetch(ticker, opts = {})
       url = "http://finance.yahoo.com/q?s=%s" % ticker
-      print "Fetching #{url}..." if $VERBOSE
+      puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url).read)
+        Nokogiri::HTML.parse(open(url, HEADERS).read)
       end
 
       # Realtime last is at yfs_l90_sym, use if exists
@@ -82,12 +93,49 @@ class Market
       quote
     end
 
+    require 'json'
+    def gchain(ticker, expiry)
+      url = "http://www.google.com/finance/option_chain?q=%s&expd=%s&expm=%s&expy=%s&output=json"
+      url = url % [ticker.gsub(/-/, "."), expiry.day, expiry.month, expiry.year]
+
+      puts "Fetching #{url}..." if $VERBOSE
+      doc = with_retry do
+        JSON.parse(
+          open(url).read.
+            gsub(/(\:"\w+):/, '\1').                # Remove extra colon that appears inside strings
+            gsub('\\', "").                         # Remove slashes
+            gsub(/(['"])?(\w+)(['"])?:/m, '"\2":'), # Quote each key
+          :symbolize_names => true)
+      end
+
+      doc[:calls].map do |call|
+        quote =  Quote.new(
+          :symbol => call[:s],
+          :last   => call[:p].to_f * 100,
+          :bid    => call[:b].to_f * 100,
+          :ask    => call[:a].to_f * 100
+        )
+
+        unless quote.symbol =~ /^\w+\d+[CP]\d+$/
+          puts "Dropping bad option #{quote.symbol.inspect}"
+          next
+        end
+
+        unless quote.bid > 0 and quote.ask > 0
+          puts "Option #{quote.symbol.inspect} has no bid or ask"
+          next
+        end
+        
+        [call[:strike].to_f * 100, quote]
+      end.compact
+    end
+
     def chain(ticker, expiry)
       url = "http://finance.yahoo.com/q/op?s=%s&m=%s" % [ticker, expiry.strftime("%Y-%m")]
-      print "Fetching #{url}..." if $VERBOSE
+      puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url).read)
+        Nokogiri::HTML.parse(open(url, HEADERS).read)
       end
 
       itm_call_data = doc.
@@ -118,10 +166,10 @@ class Market
 
     def event?(ticker, on_or_before_date)
       url = "http://finance.yahoo.com/q/ce?s=%s" % ticker
-      print "Fetching #{url}..." if $VERBOSE
+      puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url).read)
+        Nokogiri::HTML.parse(open(url, HEADERS).read)
       end
 
       return false if doc.text =~ /There is no Company Events data/
@@ -146,10 +194,10 @@ class Market
       url = "http://ichart.finance.yahoo.com/table.csv?s=%s&a=%s&b=%s&c=%s&d=%se=%s&f=%sg=d&ignore=.csv"
       url = url % [ticker, from.month - 1, from.day, from.year, to.month - 1, to.year, to.day]
 
-      print "Fetching #{url}..." if $VERBOSE
+      puts "Fetching #{url}..." if $VERBOSE
 
       csv = with_retry do
-        open(url).read
+        open(url, HEADERS).read
       end
 
       # [newest, ..., oldest]
@@ -160,10 +208,10 @@ class Market
       ticker = "^#{ticker}" unless ticker =~ /^\^/
 
       url = "http://finance.yahoo.com/q/cp?s=%s&c=%s" % [CGI.escape(ticker), offset]
-      print "Fetching #{url}..." if $VERBOSE
+      puts "Fetching #{url}..." if $VERBOSE
 
       doc = with_retry do
-        Nokogiri::HTML.parse(open(url).read)
+        Nokogiri::HTML.parse(open(url, HEADERS).read)
       end
 
       symbols = doc.at("#yfncsumtab").search("tr td:first-child.yfnc_tabledata1").map{ |td| td.text }
@@ -185,10 +233,12 @@ class Market
     end
 
     def with_retry(&block)
-      retries = 5
+      retries = 20
 
       begin
-        block.call
+        timeout(5) do
+          block.call
+        end
       rescue Exception
         retries -= 1
         unless retries.zero?
