@@ -56,13 +56,11 @@ class Market
       response = @http.request(uri, request)
       data = response.body
 
-      out = case response["content-encoding"]
+      case response["content-encoding"]
         when /gzip/    then Zlib::GzipReader.new(StringIO.new(data)).read
         when /deflate/ then Zlib::Inflate.inflate(data)
         else data
       end
-
-      out
     end
 
     def fetch(ticker, opts = {})
