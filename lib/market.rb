@@ -1,6 +1,9 @@
 require 'date'
 require 'cgi'
 
+require 'stringio'
+require 'zlib'
+
 require 'rubygems'
 require 'nokogiri'
 require 'net/http/persistent'
@@ -10,6 +13,7 @@ class Market
     "Accept" => "application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
     "Accept-Charset" => "ISO-8859-1,utf-8;q=0.7,*;q=0.3",
     "Accept-Language" => "en-US,en;q=0.8",
+    "Accept-Encoding" => "gzip,deflate",
     "Cache-Control" => "max-age=0",
     "Host" => "finance.yahoo.com",
     "Referer" => "http://finance.yahoo.com/",
@@ -50,7 +54,15 @@ class Market
       end
 
       response = @http.request(uri, request)
-      response.body
+      data = response.body
+
+      out = case response["content-encoding"]
+        when /gzip/    then Zlib::GzipReader.new(StringIO.new(data)).read
+        when /deflate/ then Zlib::Inflate.inflate(data)
+        else data
+      end
+
+      out
     end
 
     def fetch(ticker, opts = {})
