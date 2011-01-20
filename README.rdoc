@@ -1,6 +1,6 @@
 = penfold
 
- * http://github.com/aasmith/penfold
+http://github.com/aasmith/penfold
 
 == DESCRIPTION
 
